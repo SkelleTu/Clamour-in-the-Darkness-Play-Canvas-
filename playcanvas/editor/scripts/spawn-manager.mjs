@@ -1,10 +1,13 @@
-import { Script } from 'playcanvas';
+import { Entity, Script } from 'playcanvas';
 
 export class ClamourSpawnManager extends Script {
     static scriptName = 'clamourSpawnManager';
 
-    /** @attribute */
-    player = null;
+    /**
+     * @attribute
+     * @type {Entity}
+     */
+    player;
 
     /** @attribute */
     startHeight = 0.2;
@@ -16,7 +19,12 @@ export class ClamourSpawnManager extends Script {
     onAddressSelected(address) {
         if (!address || !this.player) return;
         this.player.enabled = true;
-        this.player.setPosition(0, this.startHeight, 0);
+        const playerRigidbody = this.player.rigidbody;
+        if (playerRigidbody?.type === 'dynamic') {
+            playerRigidbody.teleport(0, this.startHeight, 0);
+        } else {
+            this.player.setPosition(0, this.startHeight, 0);
+        }
         this.app.fire('player:spawn', address);
     }
 
