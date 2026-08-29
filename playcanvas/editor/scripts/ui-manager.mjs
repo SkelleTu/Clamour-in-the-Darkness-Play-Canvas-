@@ -43,7 +43,7 @@ export class ClamourUIManager extends Script {
     }
 
     _setEnabled(entity, enabled) {
-        if (entity instanceof Entity) entity.enabled = enabled;
+        if (entity) entity.enabled = enabled;
     }
 
     onBoot() {
