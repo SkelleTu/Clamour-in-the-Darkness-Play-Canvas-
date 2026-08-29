@@ -1,0 +1,49 @@
+{
+  "name": "Clamour in the Darkness - PlayCanvas Editor Wiring Plan",
+  "sourceRepository": "SkelleTu/Clamour-in-the-Darkness-Game_Web",
+  "targetProject": "PlayCanvas Project 2582233",
+  "engine": "PlayCanvas 2.x",
+  "scriptAssets": [
+    {"path":"playcanvas/editor/scripts/game-root.mjs","entity":"GameRoot","script":"clamourGameRoot"},
+    {"path":"playcanvas/editor/scripts/network-manager.mjs","entity":"Systems/NetworkManager","script":"clamourNetworkManager"},
+    {"path":"playcanvas/editor/scripts/address-manager.mjs","entity":"Systems/AddressManager","script":"clamourAddressManager"},
+    {"path":"playcanvas/editor/scripts/spawn-manager.mjs","entity":"Systems/SpawnManager","script":"clamourSpawnManager"},
+    {"path":"playcanvas/editor/scripts/player-controller.mjs","entity":"Player/Controller","script":"clamourPlayerController"},
+    {"path":"playcanvas/editor/scripts/auth-manager.mjs","entity":"Systems/AuthManager","script":"clamourAuthManager"},
+    {"path":"playcanvas/editor/scripts/persistence-manager.mjs","entity":"Systems/PersistenceManager","script":"clamourPersistenceManager"},
+    {"path":"playcanvas/editor/scripts/ui-manager.mjs","entity":"UI/GameUI","script":"clamourUIManager"},
+    {"path":"playcanvas/editor/scripts/streetview-manager.mjs","entity":"World/Environment/StreetView","script":"clamourStreetViewManager"}
+  ],
+  "hierarchy": {
+    "GameRoot": {
+      "Systems": ["GameManager", "NetworkManager", "AuthManager", "AddressManager", "SpawnManager", "PersistenceManager"],
+      "World": ["Environment", "Streets", "Buildings", "Props", "Lighting"],
+      "Player": ["Character", "Camera", "Collision", "Controller", "Network"],
+      "UI": ["MainMenu", "Login", "AddressPrompt", "HUD", "Error"]
+    }
+  },
+  "components": {
+    "Player/Camera": ["camera", "audio-listener"],
+    "Player/Collision": ["collision", "rigidbody"],
+    "Player/Controller": ["script"],
+    "World/Lighting": ["light"],
+    "UI": ["screen", "element", "button"]
+  },
+  "references": [
+    ["GameRoot.networkManager", "Systems/NetworkManager"],
+    ["NetworkManager serverUrl", "/us"],
+    ["AddressManager.networkManager", "Systems/NetworkManager"],
+    ["SpawnManager.player", "Player"],
+    ["PlayerController.cameraEntity", "Player/Camera"],
+    ["PersistenceManager.networkManager", "Systems/NetworkManager"],
+    ["AuthManager.networkManager", "Systems/NetworkManager"],
+    ["UIManager.loginEntity", "UI/Login"],
+    ["UIManager.addressEntity", "UI/AddressPrompt"],
+    ["UIManager.hudEntity", "UI/HUD"],
+    ["UIManager.loadingEntity", "UI/Loading"]
+  ],
+  "googleFlow": "UI/AddressPrompt -> AddressManager -> Universal Server /api/game/google/autocomplete -> place-details -> SpawnManager",
+  "serverFlow": "GameRoot -> NetworkManager -> Universal Server -> auth/player-state/streetview/multiplayer",
+  "streetViewFlow": "AddressManager -> StreetViewManager -> Universal Server /api/game/streetview/metadata + image",
+  "security": "No Google private key or Universal Server secret is stored in PlayCanvas assets."
+}

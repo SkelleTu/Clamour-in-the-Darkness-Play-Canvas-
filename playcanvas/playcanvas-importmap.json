@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "playcanvas": "https://cdn.jsdelivr.net/npm/playcanvas@2.21.4/+esm"
+  }
+}
