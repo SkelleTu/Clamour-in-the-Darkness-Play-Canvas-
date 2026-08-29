@@ -1,10 +1,13 @@
-import { Script } from 'playcanvas';
+import { Entity, Script } from 'playcanvas';
 
 export class ClamourAddressManager extends Script {
     static scriptName = 'clamourAddressManager';
 
-    /** @attribute */
-    networkManager = null;
+    /**
+     * @attribute
+     * @type {Entity}
+     */
+    networkManager;
 
     /** @attribute */
     ararasOnly = true;
@@ -19,7 +22,9 @@ export class ClamourAddressManager extends Script {
 
     _network() {
         if (!this.networkManager) throw new Error('AddressManager: networkManager reference is missing.');
-        return this.networkManager;
+        const network = this.networkManager.script?.clamourNetworkManager;
+        if (!network) throw new Error('AddressManager: NetworkManager entity has no clamourNetworkManager script.');
+        return network;
     }
 
     async autocomplete(input) {
