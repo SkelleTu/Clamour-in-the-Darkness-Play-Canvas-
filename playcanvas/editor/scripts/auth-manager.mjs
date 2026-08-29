@@ -1,10 +1,13 @@
-import { Script } from 'playcanvas';
+import { Entity, Script } from 'playcanvas';
 
 export class ClamourAuthManager extends Script {
     static scriptName = 'clamourAuthManager';
 
-    /** @attribute */
-    networkManager = null;
+    /**
+     * @attribute
+     * @type {Entity}
+     */
+    networkManager;
 
     initialize() {
         this.app.on('auth:login', this.login, this);
@@ -16,12 +19,14 @@ export class ClamourAuthManager extends Script {
 
     _network() {
         if (!this.networkManager) throw new Error('AuthManager: networkManager reference is missing.');
-        return this.networkManager;
+        return this.networkManager.script?.clamourNetworkManager ?? null;
     }
 
     async login({ username, password }) {
         try {
-            const result = await this._network().request('/api/game/auth/login', {
+            const network = this._network();
+            if (!network) throw new Error('AuthManager: attached NetworkManager script was not found.');
+            const result = await network.request('/api/game/auth/login', {
                 method: 'POST',
                 body: JSON.stringify({ username, password }),
             });
@@ -41,7 +46,9 @@ export class ClamourAuthManager extends Script {
             return null;
         }
         try {
-            const result = await this._network().request('/api/game/auth/register', {
+            const network = this._network();
+            if (!network) throw new Error('AuthManager: attached NetworkManager script was not found.');
+            const result = await network.request('/api/game/auth/register', {
                 method: 'POST',
                 body: JSON.stringify({ username, password }),
             });
@@ -58,7 +65,9 @@ export class ClamourAuthManager extends Script {
         const stored = this._stored();
         if (!stored) return null;
         try {
-            const result = await this._network().request('/api/game/auth/session');
+            const network = this._network();
+            if (!network) throw new Error('AuthManager: attached NetworkManager script was not found.');
+            const result = await network.request('/api/game/auth/session');
             const session = { token: stored.token, playerId: result.playerId, username: result.username };
             this._store(session);
             this.app.fire('auth:success', session);
