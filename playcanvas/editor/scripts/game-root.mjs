@@ -16,6 +16,13 @@ export class ClamourGameRoot extends Script {
 
         this.app.on('network:online', this.onNetworkOnline, this);
         this.app.on('network:error', this.onNetworkError, this);
+
+        // Wait until all enabled scripts have completed initialize() before
+        // announcing boot, so UI and system listeners cannot miss the event.
+        this.app.once('update', this.onFirstUpdate, this);
+    }
+
+    onFirstUpdate() {
         this.app.fire('clamour:boot');
     }
 
@@ -31,5 +38,6 @@ export class ClamourGameRoot extends Script {
     destroy() {
         this.app.off('network:online', this.onNetworkOnline, this);
         this.app.off('network:error', this.onNetworkError, this);
+        this.app.off('update', this.onFirstUpdate, this);
     }
 }
