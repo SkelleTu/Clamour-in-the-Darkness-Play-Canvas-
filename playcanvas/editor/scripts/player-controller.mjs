@@ -1,4 +1,4 @@
-import { Script, Vec3 } from 'playcanvas';
+import { Entity, Script, Vec3, KEY_A, KEY_D, KEY_S, KEY_SHIFT, KEY_W, KEY_SPACE } from 'playcanvas';
 
 export class ClamourPlayerController extends Script {
     static scriptName = 'clamourPlayerController';
@@ -10,35 +10,65 @@ export class ClamourPlayerController extends Script {
     sprintSpeed = 5.2;
 
     /** @attribute */
-    jumpHeight = 1.25;
+    jumpSpeed = 4.95;
 
     /** @attribute */
-    gravity = -18;
+    staminaDrain = 30;
 
     /** @attribute */
-    cameraEntity = null;
+    staminaRecovery = 18;
+
+    /** @attribute */
+    lookSensitivity = 0.08;
+
+    /** @attribute */
+    groundRayLength = 0.35;
+
+    /**
+     * @attribute
+     * @type {Entity}
+     */
+    cameraEntity;
 
     initialize() {
         this.velocity = new Vec3();
         this._move = new Vec3();
-        this._keys = new Set();
-        this.yaw = 0;
+        this._from = new Vec3();
+        this._to = new Vec3();
+        this.yaw = this.entity.getEulerAngles().y;
         this.pitch = 0;
-        this.onGround = true;
         this.stamina = 100;
         this.health = 100;
-        this._onDown = (e) => this._keys.add(e.code);
-        this._onUp = (e) => this._keys.delete(e.code);
-        this._onMouse = (e) => {
-            if (document.pointerLockElement) {
-                this.yaw -= e.movementX * 0.08;
-                this.pitch = Math.max(-85, Math.min(85, this.pitch - e.movementY * 0.08));
-            }
-        };
-        window.addEventListener('keydown', this._onDown);
-        window.addEventListener('keyup', this._onUp);
-        window.addEventListener('mousemove', this._onMouse);
+        this.onGround = false;
+
+        if (!this.entity.collision) console.error('[Clamour] Player requires a Collision component.');
+        if (!this.entity.rigidbody || this.entity.rigidbody.type !== 'dynamic') {
+            console.error('[Clamour] Player requires a DYNAMIC Rigid Body component.');
+        }
+
+        if (this.app.keyboard) {
+            this.app.keyboard.on('keydown', this._onKeyDown, this);
+        }
+        if (this.app.mouse) {
+            this.app.mouse.on('mousemove', this._onMouseMove, this);
+            this.app.mouse.on('mousedown', this._onMouseDown, this);
+        }
+
         this.app.on('player:spawn', this.onSpawn, this);
+    }
+
+    _onKeyDown(event) {
+        if (event.key === 'Escape' && document.pointerLockElement) document.exitPointerLock();
+    }
+
+    _onMouseDown() {
+        if (!document.pointerLockElement && this.app.mouse) this.app.mouse.enablePointerLock();
+    }
+
+    _onMouseMove(event) {
+        if (!document.pointerLockElement) return;
+        this.yaw -= event.dx * this.lookSensitivity;
+        this.pitch = Math.max(-85, Math.min(85, this.pitch - event.dy * this.lookSensitivity));
     }
 
     onSpawn(data) {
@@ -46,57 +76,64 @@ export class ClamourPlayerController extends Script {
         this.app.fire('player:ready', data);
     }
 
+    _checkGrounded() {
+        if (!this.app.systems?.rigidbody || !this.entity.collision) return false;
+        const position = this.entity.getPosition();
+        this._from.set(position.x, position.y + 0.08, position.z);
+        this._to.set(position.x, position.y - this.groundRayLength, position.z);
+        const hit = this.app.systems.rigidbody.raycastFirst(this._from, this._to);
+        return !!hit && hit.entity !== this.entity;
+    }
+
     update(dt) {
+        if (!this.entity.rigidbody || this.entity.rigidbody.type !== 'dynamic' || !this.app.keyboard) return;
+
+        this.onGround = this._checkGrounded();
         this._move.set(0, 0, 0);
-        if (this._keys.has('KeyW')) this._move.z -= 1;
-        if (this._keys.has('KeyS')) this._move.z += 1;
-        if (this._keys.has('KeyA')) this._move.x -= 1;
-        if (this._keys.has('KeyD')) this._move.x += 1;
+        if (this.app.keyboard.isPressed(KEY_W)) this._move.z -= 1;
+        if (this.app.keyboard.isPressed(KEY_S)) this._move.z += 1;
+        if (this.app.keyboard.isPressed(KEY_A)) this._move.x -= 1;
+        if (this.app.keyboard.isPressed(KEY_D)) this._move.x += 1;
+
         const moving = this._move.lengthSq() > 0;
         if (moving) this._move.normalize();
 
-        const sprinting = (this._keys.has('ShiftLeft') || this._keys.has('ShiftRight')) && moving && this.stamina > 1;
+        const sprinting = this.app.keyboard.isPressed(KEY_SHIFT) && moving && this.stamina > 0;
         const speed = sprinting ? this.sprintSpeed : this.walkSpeed;
-        if (sprinting) this.stamina = Math.max(0, this.stamina - 30 * dt);
-        else this.stamina = Math.min(100, this.stamina + 18 * dt);
+        if (sprinting) this.stamina = Math.max(0, this.stamina - this.staminaDrain * dt);
+        else this.stamina = Math.min(100, this.stamina + this.staminaRecovery * dt);
 
         const yaw = this.yaw * Math.PI / 180;
         const sin = Math.sin(yaw);
         const cos = Math.cos(yaw);
         const worldX = this._move.x * cos - this._move.z * sin;
         const worldZ = this._move.x * sin + this._move.z * cos;
-        this.entity.translate(worldX * speed * dt, 0, worldZ * speed * dt);
 
-        if (this._keys.has('Space') && this.onGround) {
-            this.velocity.y = Math.sqrt(-2 * this.gravity * this.jumpHeight);
+        const current = this.entity.rigidbody.linearVelocity;
+        this.velocity.set(worldX * speed, current.y, worldZ * speed);
+        this.entity.rigidbody.linearVelocity = this.velocity;
+
+        if (this.app.keyboard.wasPressed(KEY_SPACE) && this.onGround) {
+            this.velocity.y = this.jumpSpeed;
+            this.entity.rigidbody.linearVelocity = this.velocity;
             this.onGround = false;
-            this._keys.delete('Space');
-        }
-        if (!this.onGround) {
-            this.velocity.y += this.gravity * dt;
-            this.entity.translate(0, this.velocity.y * dt, 0);
-            if (this.entity.getPosition().y <= 0) {
-                this.entity.setPosition(this.entity.getPosition().x, 0, this.entity.getPosition().z);
-                this.velocity.y = 0;
-                this.onGround = true;
-            }
         }
 
         if (this.cameraEntity) {
             this.cameraEntity.setLocalPosition(0, 1.65, 0);
             this.cameraEntity.setLocalEulerAngles(this.pitch, 0, 0);
-            this.entity.setEulerAngles(0, this.yaw, 0);
-        } else {
-            this.entity.setEulerAngles(0, this.yaw, 0);
         }
+        this.entity.setEulerAngles(0, this.yaw, 0);
 
         this.app.fire('player:vitals', { health: this.health, stamina: this.stamina });
     }
 
     destroy() {
-        window.removeEventListener('keydown', this._onDown);
-        window.removeEventListener('keyup', this._onUp);
-        window.removeEventListener('mousemove', this._onMouse);
+        if (this.app.keyboard) this.app.keyboard.off('keydown', this._onKeyDown, this);
+        if (this.app.mouse) {
+            this.app.mouse.off('mousemove', this._onMouseMove, this);
+            this.app.mouse.off('mousedown', this._onMouseDown, this);
+        }
         this.app.off('player:spawn', this.onSpawn, this);
     }
 }
