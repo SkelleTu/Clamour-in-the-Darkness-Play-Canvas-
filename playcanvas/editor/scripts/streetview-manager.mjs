@@ -1,26 +1,41 @@
-import { Script, Asset } from 'playcanvas';
+import { Asset, Entity, Script } from 'playcanvas';
 
 export class ClamourStreetViewManager extends Script {
     static scriptName = 'clamourStreetViewManager';
 
-    /** @attribute */
-    networkManager = null;
+    /**
+     * @attribute
+     * @type {Entity}
+     */
+    networkManager;
 
-    /** @attribute */
-    panoramaEntity = null;
+    /**
+     * @attribute
+     * @type {Entity}
+     */
+    panoramaEntity;
 
-    /** @attribute */
-    sphereAsset = null;
+    /**
+     * @attribute
+     * @type {Asset}
+     */
+    sphereAsset;
 
     initialize() {
-        this.app.on('location:selected', this.loadForLocation, this);
+        this.metadata = null;
+        this.app.on('address:selected', this.loadForLocation, this);
+    }
+
+    _network() {
+        const network = this.networkManager?.script?.clamourNetworkManager;
+        if (!network) throw new Error('StreetViewManager: NetworkManager entity has no clamourNetworkManager script.');
+        return network;
     }
 
     async loadForLocation(location) {
         if (!location) return;
         try {
-            const network = this.networkManager;
-            if (!network) throw new Error('StreetViewManager: networkManager reference is missing.');
+            const network = this._network();
             const metadata = await network.request(`/api/game/streetview/metadata?lat=${encodeURIComponent(location.lat)}&lng=${encodeURIComponent(location.lon)}&radius=100`);
             const data = metadata?.data ?? metadata;
             if (!data?.pano || !data?.location) throw new Error('Panorama do Google não encontrado para este ponto.');
@@ -45,7 +60,11 @@ export class ClamourStreetViewManager extends Script {
             width: String(width),
             height: String(height),
         });
-        const base = String(this.networkManager?.serverUrl || '/us').replace(/\/$/, '');
+        const base = String(this.networkManager?.script?.clamourNetworkManager?.serverUrl || '/us').replace(/\/$/, '');
         return `${base}/api/game/streetview/image?${p}`;
+    }
+
+    destroy() {
+        this.app.off('address:selected', this.loadForLocation, this);
     }
 }
