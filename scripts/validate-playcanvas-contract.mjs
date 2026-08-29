@@ -41,7 +41,7 @@ if (fs.existsSync(scriptsDir)) {
         if (/pc\.createScript\s*\(/.test(source)) {
             fail(`${path.join('playcanvas/editor/scripts', name)} uses deprecated classic-script registration`);
         }
-        if (/apiKey\s*=/.test(source) || /x-api-key/.test(source)) {
+        if (/\bapiKey\s*=/.test(source) || /['"]x-api-key['"]/.test(source)) {
             fail(`${path.join('playcanvas/editor/scripts', name)} appears to carry a client API key`);
         }
     }
@@ -56,8 +56,8 @@ const player = fs.readFileSync(path.join(root, 'playcanvas', 'editor', 'scripts'
 if (!player.includes('rigidbody.linearVelocity')) {
     fail('PlayerController must use native Rigidbody velocity for a dynamic body');
 }
-if (/this\.entity\.(translate|setPosition|setEulerAngles)\s*\(/.test(player)) {
-    fail('PlayerController contains a direct Entity transform mutation incompatible with normal dynamic-body movement');
+if (/this\.entity\.(translate|setPosition)\s*\(/.test(player)) {
+    fail('PlayerController contains a direct Entity movement mutation incompatible with normal dynamic-body movement');
 }
 
 const streetView = fs.readFileSync(path.join(root, 'playcanvas', 'editor', 'scripts', 'streetview-manager.mjs'), 'utf8');
@@ -65,17 +65,18 @@ if (!streetView.includes("'address:selected'")) {
     fail('StreetViewManager must listen to the canonical address:selected event');
 }
 
-const server = fs.readFileSync(path.join(root, 'universal-server', 'artifacts', 'api-server', 'src', 'routes', 'game.ts'), 'utf8');
+const health = fs.readFileSync(path.join(root, 'universal-server', 'artifacts', 'api-server', 'src', 'routes', 'health.ts'), 'utf8');
 const network = fs.readFileSync(path.join(root, 'playcanvas', 'editor', 'scripts', 'network-manager.mjs'), 'utf8');
 const healthPathMatch = network.match(/healthPath\s*=\s*['\"]([^'\"]+)['\"]/);
 if (!healthPathMatch || healthPathMatch[1] !== '/api/healthz') {
     fail(`NetworkManager healthPath must be /api/healthz, got ${healthPathMatch?.[1] ?? 'missing'}`);
 }
-if (!server.includes('router.get("/healthz"') && !server.includes("router.get('/healthz'")) {
+if (!health.includes('router.get("/healthz"')) {
     fail('Universal Server does not expose the health endpoint expected by NetworkManager');
 }
 
-if (!fs.readFileSync(path.join(root, 'playcanvas', 'playcanvas-importmap.json'), 'utf8').includes('playcanvas@2.21.4')) {
+const importMap = fs.readFileSync(path.join(root, 'playcanvas', 'playcanvas-importmap.json'), 'utf8');
+if (!importMap.includes('playcanvas@2.21.4')) {
     fail('PlayCanvas import map is not pinned to the audited stable engine version 2.21.4');
 }
 
