@@ -7,7 +7,7 @@ export class ClamourNetworkManager extends Script {
     serverUrl = '/us';
 
     /** @attribute */
-    healthPath = '/api/game/status';
+    healthPath = '/api/healthz';
 
     /** @attribute */
     heartbeatSeconds = 10;
@@ -15,7 +15,7 @@ export class ClamourNetworkManager extends Script {
     initialize() {
         this.online = false;
         this._timer = 0;
-        this.check();
+        void this.check();
     }
 
     _headers() {
@@ -34,9 +34,8 @@ export class ClamourNetworkManager extends Script {
             const response = await fetch(`${this._base()}${this.healthPath}`, { headers: this._headers() });
             const payload = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(`Universal Server HTTP ${response.status}`);
-            this.online = !payload?.expired;
-            if (this.online) this.app.fire('network:online', payload);
-            else this.app.fire('network:error', new Error('Universal Server expirado.'));
+            this.online = true;
+            this.app.fire('network:online', payload);
             return payload;
         } catch (error) {
             this.online = false;
