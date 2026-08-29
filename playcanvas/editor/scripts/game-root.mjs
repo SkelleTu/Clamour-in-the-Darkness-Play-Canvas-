@@ -1,15 +1,22 @@
-import { Script } from 'playcanvas';
+import { Entity, Script } from 'playcanvas';
 
 export class ClamourGameRoot extends Script {
     static scriptName = 'clamourGameRoot';
 
-    /** @attribute */
-    networkManager = null;
+    /**
+     * @attribute
+     * @type {Entity}
+     */
+    networkManager;
 
     initialize() {
-        this.app.fire('clamour:boot');
+        if (!this.networkManager) {
+            console.error('[Clamour] GameRoot requires Systems/NetworkManager in the Inspector.');
+        }
+
         this.app.on('network:online', this.onNetworkOnline, this);
         this.app.on('network:error', this.onNetworkError, this);
+        this.app.fire('clamour:boot');
     }
 
     onNetworkOnline(status) {
