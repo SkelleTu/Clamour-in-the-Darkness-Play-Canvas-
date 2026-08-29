@@ -1,5 +1,5 @@
 {
-  "name": "Clamour in the Darkness - PlayCanvas Editor Wiring Plan",
+  "name": "Clamour in the Darkness - PlayCanvas Editor Integration Contract",
   "sourceRepository": "SkelleTu/Clamour-in-the-Darkness-Game_Web",
   "targetProject": "PlayCanvas Project 2582233",
   "engine": "PlayCanvas 2.x",
@@ -33,15 +33,16 @@
     "required": true,
     "ammo": true,
     "playerRigidBodyType": "dynamic",
-    "note": "Dynamic player movement is implemented through the Rigidbody API; do not use Entity.translate/setPosition for normal movement."
+    "movement": "rigidbody-api",
+    "teleportOnly": "rigidbody-teleport"
   },
   "input": {
     "required": ["keyboard", "mouse"],
+    "optional": ["touch", "gamepads"],
     "pointerLock": true
   },
   "references": [
     ["GameRoot.networkManager", "Systems/NetworkManager"],
-    ["NetworkManager serverUrl", "/us"],
     ["AddressManager.networkManager", "Systems/NetworkManager"],
     ["SpawnManager.player", "Player"],
     ["PlayerController.cameraEntity", "Player/Camera"],
