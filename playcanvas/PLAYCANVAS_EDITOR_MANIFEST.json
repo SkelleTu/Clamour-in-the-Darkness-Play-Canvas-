@@ -11,7 +11,7 @@
     {"path":"playcanvas/editor/scripts/player-controller.mjs","entity":"Player/Controller","script":"clamourPlayerController"},
     {"path":"playcanvas/editor/scripts/auth-manager.mjs","entity":"Systems/AuthManager","script":"clamourAuthManager"},
     {"path":"playcanvas/editor/scripts/persistence-manager.mjs","entity":"Systems/PersistenceManager","script":"clamourPersistenceManager"},
-    {"path":"playcanvas/editor/scripts/ui-manager.mjs","entity":"UI/GameUI","script":"clamourUIManager"},
+    {"path":"playcanvas/editor/scripts/ui-manager.mjs","entity":"UI","script":"clamourUIManager"},
     {"path":"playcanvas/editor/scripts/streetview-manager.mjs","entity":"World/Environment/StreetView","script":"clamourStreetViewManager"}
   ],
   "hierarchy": {
@@ -19,7 +19,7 @@
       "Systems": ["GameManager", "NetworkManager", "AuthManager", "AddressManager", "SpawnManager", "PersistenceManager"],
       "World": ["Environment", "Streets", "Buildings", "Props", "Lighting"],
       "Player": ["Character", "Camera", "Collision", "Controller", "Network"],
-      "UI": ["MainMenu", "Login", "AddressPrompt", "HUD", "Error"]
+      "UI": ["MainMenu", "Login", "AddressPrompt", "HUD", "Loading", "Error"]
     }
   },
   "components": {
@@ -28,6 +28,16 @@
     "Player/Controller": ["script"],
     "World/Lighting": ["light"],
     "UI": ["screen", "element", "button"]
+  },
+  "physics": {
+    "required": true,
+    "ammo": true,
+    "playerRigidBodyType": "dynamic",
+    "note": "Dynamic player movement is implemented through the Rigidbody API; do not use Entity.translate/setPosition for normal movement."
+  },
+  "input": {
+    "required": ["keyboard", "mouse"],
+    "pointerLock": true
   },
   "references": [
     ["GameRoot.networkManager", "Systems/NetworkManager"],
@@ -42,7 +52,7 @@
     ["UIManager.hudEntity", "UI/HUD"],
     ["UIManager.loadingEntity", "UI/Loading"]
   ],
-  "googleFlow": "UI/AddressPrompt -> AddressManager -> Universal Server /api/game/google/autocomplete -> place-details -> SpawnManager",
+  "googleFlow": "UI/AddressPrompt -> AddressManager -> Universal Server /api/game/google/autocomplete -> place-details -> address:selected -> StreetViewManager + SpawnManager",
   "serverFlow": "GameRoot -> NetworkManager -> Universal Server -> auth/player-state/streetview/multiplayer",
   "streetViewFlow": "AddressManager -> StreetViewManager -> Universal Server /api/game/streetview/metadata + image",
   "security": "No Google private key or Universal Server secret is stored in PlayCanvas assets."
