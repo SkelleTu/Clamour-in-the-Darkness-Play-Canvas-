@@ -7,9 +7,6 @@ export class ClamourNetworkManager extends Script {
     serverUrl = '/us';
 
     /** @attribute */
-    apiKey = '';
-
-    /** @attribute */
     healthPath = '/api/game/status';
 
     /** @attribute */
@@ -25,7 +22,6 @@ export class ClamourNetworkManager extends Script {
         const headers = { Accept: 'application/json' };
         const token = localStorage.getItem('clamour_auth_token');
         if (token) headers.Authorization = `Bearer ${token}`;
-        if (this.apiKey) headers['x-api-key'] = this.apiKey;
         return headers;
     }
 
