@@ -1,19 +1,31 @@
-import { Script, Entity } from 'playcanvas';
+import { Entity, Script } from 'playcanvas';
 
 export class ClamourUIManager extends Script {
     static scriptName = 'clamourUIManager';
 
-    /** @attribute */
-    loginEntity = null;
+    /**
+     * @attribute
+     * @type {Entity}
+     */
+    loginEntity;
 
-    /** @attribute */
-    addressEntity = null;
+    /**
+     * @attribute
+     * @type {Entity}
+     */
+    addressEntity;
 
-    /** @attribute */
-    hudEntity = null;
+    /**
+     * @attribute
+     * @type {Entity}
+     */
+    hudEntity;
 
-    /** @attribute */
-    loadingEntity = null;
+    /**
+     * @attribute
+     * @type {Entity}
+     */
+    loadingEntity;
 
     initialize() {
         this._setEnabled(this.loginEntity, false);
