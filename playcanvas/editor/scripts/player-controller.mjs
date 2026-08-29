@@ -46,27 +46,22 @@ export class ClamourPlayerController extends Script {
             console.error('[Clamour] Player requires a DYNAMIC Rigid Body component.');
         }
 
-        if (this.app.keyboard) {
-            this.app.keyboard.on('keydown', this._onKeyDown, this);
-        }
-        if (this.app.mouse) {
-            this.app.mouse.on('mousemove', this._onMouseMove, this);
-            this.app.mouse.on('mousedown', this._onMouseDown, this);
-        }
-
+        this.app.keyboard?.on('keydown', this._onKeyDown, this);
+        this.app.mouse?.on('mousemove', this._onMouseMove, this);
+        this.app.mouse?.on('mousedown', this._onMouseDown, this);
         this.app.on('player:spawn', this.onSpawn, this);
     }
 
     _onKeyDown(event) {
-        if (event.key === 'Escape' && document.pointerLockElement) document.exitPointerLock();
+        if (event.key === 'Escape' && this.app.mouse?.isPointerLocked()) this.app.mouse.disablePointerLock();
     }
 
     _onMouseDown() {
-        if (!document.pointerLockElement && this.app.mouse) this.app.mouse.enablePointerLock();
+        if (this.app.mouse && !this.app.mouse.isPointerLocked()) this.app.mouse.enablePointerLock();
     }
 
     _onMouseMove(event) {
-        if (!document.pointerLockElement) return;
+        if (!this.app.mouse?.isPointerLocked()) return;
         this.yaw -= event.dx * this.lookSensitivity;
         this.pitch = Math.max(-85, Math.min(85, this.pitch - event.dy * this.lookSensitivity));
     }
@@ -86,19 +81,21 @@ export class ClamourPlayerController extends Script {
     }
 
     update(dt) {
-        if (!this.entity.rigidbody || this.entity.rigidbody.type !== 'dynamic' || !this.app.keyboard) return;
+        const rigidbody = this.entity.rigidbody;
+        const keyboard = this.app.keyboard;
+        if (!rigidbody || rigidbody.type !== 'dynamic' || !keyboard) return;
 
         this.onGround = this._checkGrounded();
         this._move.set(0, 0, 0);
-        if (this.app.keyboard.isPressed(KEY_W)) this._move.z -= 1;
-        if (this.app.keyboard.isPressed(KEY_S)) this._move.z += 1;
-        if (this.app.keyboard.isPressed(KEY_A)) this._move.x -= 1;
-        if (this.app.keyboard.isPressed(KEY_D)) this._move.x += 1;
+        if (keyboard.isPressed(KEY_W)) this._move.z -= 1;
+        if (keyboard.isPressed(KEY_S)) this._move.z += 1;
+        if (keyboard.isPressed(KEY_A)) this._move.x -= 1;
+        if (keyboard.isPressed(KEY_D)) this._move.x += 1;
 
         const moving = this._move.lengthSq() > 0;
         if (moving) this._move.normalize();
 
-        const sprinting = this.app.keyboard.isPressed(KEY_SHIFT) && moving && this.stamina > 0;
+        const sprinting = keyboard.isPressed(KEY_SHIFT) && moving && this.stamina > 0;
         const speed = sprinting ? this.sprintSpeed : this.walkSpeed;
         if (sprinting) this.stamina = Math.max(0, this.stamina - this.staminaDrain * dt);
         else this.stamina = Math.min(100, this.stamina + this.staminaRecovery * dt);
@@ -109,31 +106,30 @@ export class ClamourPlayerController extends Script {
         const worldX = this._move.x * cos - this._move.z * sin;
         const worldZ = this._move.x * sin + this._move.z * cos;
 
-        const current = this.entity.rigidbody.linearVelocity;
+        const current = rigidbody.linearVelocity;
         this.velocity.set(worldX * speed, current.y, worldZ * speed);
-        this.entity.rigidbody.linearVelocity = this.velocity;
+        rigidbody.linearVelocity = this.velocity;
 
-        if (this.app.keyboard.wasPressed(KEY_SPACE) && this.onGround) {
+        if (keyboard.wasPressed(KEY_SPACE) && this.onGround) {
             this.velocity.y = this.jumpSpeed;
-            this.entity.rigidbody.linearVelocity = this.velocity;
+            rigidbody.linearVelocity = this.velocity;
             this.onGround = false;
         }
 
+        // Dynamic body transforms are owned by the physics engine. Apply yaw
+        // to the camera locally so look control does not fight physics.
         if (this.cameraEntity) {
             this.cameraEntity.setLocalPosition(0, 1.65, 0);
-            this.cameraEntity.setLocalEulerAngles(this.pitch, 0, 0);
+            this.cameraEntity.setLocalEulerAngles(this.pitch, this.yaw, 0);
         }
-        this.entity.setEulerAngles(0, this.yaw, 0);
 
         this.app.fire('player:vitals', { health: this.health, stamina: this.stamina });
     }
 
     destroy() {
-        if (this.app.keyboard) this.app.keyboard.off('keydown', this._onKeyDown, this);
-        if (this.app.mouse) {
-            this.app.mouse.off('mousemove', this._onMouseMove, this);
-            this.app.mouse.off('mousedown', this._onMouseDown, this);
-        }
+        this.app.keyboard?.off('keydown', this._onKeyDown, this);
+        this.app.mouse?.off('mousemove', this._onMouseMove, this);
+        this.app.mouse?.off('mousedown', this._onMouseDown, this);
         this.app.off('player:spawn', this.onSpawn, this);
     }
 }
