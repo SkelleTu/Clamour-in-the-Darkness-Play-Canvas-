@@ -10,6 +10,7 @@ export class ClamourAuthManager extends Script {
         this.app.on('auth:login', this.login, this);
         this.app.on('auth:register', this.register, this);
         this.app.on('auth:logout', this.logout, this);
+        this.app.on('auth:validate', this.validate, this);
         this._emitStoredSession();
     }
 
@@ -54,16 +55,17 @@ export class ClamourAuthManager extends Script {
     }
 
     async validate() {
+        const stored = this._stored();
+        if (!stored) return null;
         try {
             const result = await this._network().request('/api/game/auth/session');
-            const stored = this._stored();
-            if (!stored) return null;
             const session = { token: stored.token, playerId: result.playerId, username: result.username };
             this._store(session);
             this.app.fire('auth:success', session);
             return session;
         } catch {
             this._clear();
+            this.app.fire('auth:logged-out');
             return null;
         }
     }
@@ -94,13 +96,13 @@ export class ClamourAuthManager extends Script {
     }
 
     _emitStoredSession() {
-        const stored = this._stored();
-        if (stored) void this.validate();
+        if (this._stored()) void this.validate();
     }
 
     destroy() {
         this.app.off('auth:login', this.login, this);
         this.app.off('auth:register', this.register, this);
         this.app.off('auth:logout', this.logout, this);
+        this.app.off('auth:validate', this.validate, this);
     }
 }
