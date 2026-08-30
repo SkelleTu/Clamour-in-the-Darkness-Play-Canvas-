@@ -1,36 +1,38 @@
 # Clamour in the Darkness — Kilo Project Instructions
 
-## Authority
-For PlayCanvas-owned behavior, the live PlayCanvas Editor and current PlayCanvas 2.x documentation are authoritative. Never invent a parallel engine abstraction when a native PlayCanvas capability exists.
+## Runtime architecture authority
+The primary game runtime is **React + PlayCanvas Engine 2.x running directly in the browser**. The PlayCanvas Editor is optional authoring tooling, not the runtime and not a mandatory architectural dependency.
 
-Read before changing PlayCanvas integration:
+Before changing gameplay/runtime code, read:
+- `CLAMOUR_REACT_PLAYCANVAS_ENGINE_MASTER.md`
+- `PLAYCANVAS_KILO_MASTER_DIRECTIVE.md`
 - `PLAYCANVAS_KILO_CONTRACT.md`
-- `playcanvas/PLAYCANVAS_EDITOR_FORENSIC_SPEC.md`
-- `playcanvas/PLAYCANVAS_EDITOR_MANIFEST.json`
-- `playcanvas/README.md`
+- `playcanvas/PLAYCANVAS_EDITOR_FORENSIC_SPEC.md` only when Editor integration is actually involved
 
 ## Mandatory rules
-- Preserve the existing PlayCanvas architecture and script names unless the change explicitly migrates them.
-- Use native Entities, Components, Assets, Templates, Scenes, Project Settings, Layers and Editor workflows before custom code.
-- New PlayCanvas scripts are ESM `.mjs` scripts extending `Script` with `static scriptName`.
-- Use typed ESM Script Attributes for Entity/Asset references and verify them in the real Inspector.
-- Use native Collision/Rigid Body physics. Dynamic bodies are moved through physics APIs, not ordinary Entity transforms.
-- Use PlayCanvas Keyboard/Mouse/Touch/Gamepad facilities according to enabled Project Settings.
-- Prefer GLB + Import Hierarchy for editable imported 3D hierarchies.
-- Do not introduce deprecated Model/Animation component dependencies in new work.
-- Do not store private Google credentials, server secrets or service tokens in client assets.
-- Treat GitHub as the source of source files and the live PlayCanvas project as the source of Editor scene/entity/component/asset/settings state.
-- For external AI coding changes to PlayCanvas text assets, use PlayCanvas VS Code/Cursor Pull/Push mode, not Realtime mode.
+- React owns application/UI state and application-level presentation.
+- PlayCanvas Engine owns the real-time 3D runtime: scene graph, rendering, camera, physics, animation, audio, particles, assets and gameplay-side 3D behavior.
+- Universal Server owns persistent/server-authoritative state and protected external-service credentials.
+- PlayCanvas Editor may be used for asset/scene authoring, inspection or optional workflows, but the game must not depend on the Editor being open or on Editor-only scene wiring.
+- Do not force a React system, service, UI state, gameplay system or runtime manager into PlayCanvas Editor Entities/Components merely to make the project look Editor-native.
+- Do not create a second renderer, physics engine, scene graph or asset system when the PlayCanvas Engine already provides the capability.
+- New direct PlayCanvas Engine code uses ESM imports from `playcanvas` and current Engine 2.x APIs.
+- Prefer native Engine APIs for input, physics, rendering, animation, audio, assets, entities and events.
+- React must not directly own low-level per-frame 3D mutation when a dedicated PlayCanvas Engine system/component/controller is the correct owner.
+- PlayCanvas Engine state must not become a duplicate React state tree. Keep one authoritative owner per state domain.
+- Keep server secrets out of client/React/PlayCanvas code.
 
-## Change protocol
-1. Inspect the existing source and the live Editor state when available.
-2. Identify which PlayCanvas native feature owns the behavior.
-3. Make the smallest coherent change.
-4. Check producers/listeners and all endpoint contracts when events or networking change.
-5. Parse changed scripts in the Editor so attributes refresh.
-6. Review diagnostics and diff.
-7. Launch the actual Scene and inspect runtime output.
-8. Never report "100% compatible" from repository inspection alone.
+## Runtime verification
+The primary completion test is:
+1. `play.bat` or the normal local dev command starts the browser game.
+2. React loads.
+3. PlayCanvas Engine initializes successfully.
+4. The game scene initializes without Editor dependency.
+5. No runtime console errors occur.
+6. Required server/network flows work.
+7. Physics/input/rendering/asset loading behave correctly.
 
-## Clamour integration
-The target hierarchy, references, events, physics requirements and server boundaries are defined in the forensic specification and manifest. Do not silently create another scene graph, input system, physics system or rendering layer.
+Editor verification is additional only when a feature intentionally uses Editor-authored assets/scenes or Editor-specific tooling.
+
+## Git/Editor synchronization
+Source code in GitHub is authoritative for runtime code. Do not assume the live Editor contains required runtime behavior. If Editor assets/scenes are deliberately used, keep their integration documented and test the standalone browser runtime as the final authority for playability.
