@@ -1,0 +1,20 @@
+{
+  "name": "ai-3d-agent-platform",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "server": "node backend/server.mjs"
+  },
+  "dependencies": {
+    "playcanvas": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "typescript": "latest",
+    "vite": "latest"
+  }
+}
